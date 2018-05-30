@@ -5,21 +5,32 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.ContextMenu;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.animation.AccelerateInterpolator;
 import android.widget.Toast;
 
 import com.example.norbert.moviesapp.adapter.MoviesAdapter;
+import com.example.norbert.moviesapp.api.Client;
+import com.example.norbert.moviesapp.api.Service;
 import com.example.norbert.moviesapp.model.Movie;
+import com.example.norbert.moviesapp.model.MoviesResponse;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -73,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
         movieList = new ArrayList<>();
         adapter = new MoviesAdapter(this, movieList);
 
-        if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT0) {
+        if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
 
         } else {
@@ -90,6 +101,58 @@ public class MainActivity extends AppCompatActivity {
 
     private  void loadJSON() {
 
+        try{
+            if (BuildConfig.THE_MOVIE_DB_API_TOKEN.isEmpty()) {
+                Toast.makeText(getApplicationContext(), "PLease obtain API Key firstly from themoviedb.org", Toast.LENGTH_SHORT).show();
+                pd.dismiss();
+                return;
+
+            }
+            Client Client = new Client();
+            Service apiService =
+                    Client.getClient().create(Service.class);
+            Call<MoviesResponse> call = apiService.getPopularMovies(BuildConfig.THE_MOVIE_DB_API_TOKEN);
+            Call.enqueue(new Callback<MoviesResponse>(){
+                @Override
+                public void onResponse(Call<MoviesResponse> call, Response<MoviesResponse> response) {
+                    List<Movie> movies = response.body().getResults();
+                    recyclerView.setAdapter(new MoviesAdapter(getApplicationContext(), movies));
+                    recyclerView.smoothScrollToPosition(0);
+                    if(swipeContainer.isRefreshing()) {
+                        swipeContainer.setRefreshing(false);
+                    }
+                    pd.dismiss();
+
+                }
+
+                @Override
+                public void onFailure(Call <MoviesResponse> call, Throwable t) {
+                    Log.d("Error", t.getMessage());
+                    Toast.makeText(MainActivity.this, "Error Fetching Data!", Toast.LENGTH_SHORT).show();
+
+                }
+            });
+        }catch (Exception e) {
+            Log.d("Error", e.getMessage());
+            Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu){
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemsSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_settings:
+            return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
 }
