@@ -112,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
             Service apiService =
                     Client.getClient().create(Service.class);
             Call<MoviesResponse> call = apiService.getPopularMovies(BuildConfig.THE_MOVIE_DB_API_TOKEN);
-            Call.enqueue(new Callback<MoviesResponse>(){
+            call.enqueue(new Callback<MoviesResponse>(){
                 @Override
                 public void onResponse(Call<MoviesResponse> call, Response<MoviesResponse> response) {
                     List<Movie> movies = response.body().getResults();
@@ -146,7 +146,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onOptionsItemsSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_settings:
             return true;
